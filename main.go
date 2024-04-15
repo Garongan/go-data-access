@@ -43,18 +43,48 @@ func main() {
 
 	// get data by artist
 	albums, err := albumsByArtist("John Coltrane")
-	if err != nil {
-		log.Fatal(err)
-	}
+	logError(err)
 	fmt.Printf("Albums found: %v\n", albums)
 
 	// get data by id
-	album, err := albumsById(1)
+	album, err := getAlbumById(1)
+	logError(err)
+	fmt.Printf("Album found: %v\n", album)
+
+	// add data album
+	addInfo, err := addAlbum(Album{
+		Title:  "Dumes",
+		Artist: "Denny Chacknan",
+		Price:  55.65,
+	})
+	logError(err)
+	fmt.Println(addInfo)
+
+	// update album by id
+	updatedAlbum, err := updateAlbumById(5, Album{
+		Title: "Kisinan",
+		Artist: "Massdho",
+		Price: 66.54,
+	})
+	logError(err)
+	fmt.Printf("Updated Album: %v\n", updatedAlbum)
+
+	// delete album by id
+	deleteInfo, err := deleteAlbumById(5)
+	logError(err)
+	fmt.Println(deleteInfo)
+
+	// get all album
+	allAlbums, err := getAlbums()
+	logError(err)
+	fmt.Printf("All Albums: %v\n", allAlbums)
+
+}
+
+func logError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Album found: %v\n", album)
-
 }
 
 func checkError(err error) {
@@ -63,7 +93,7 @@ func checkError(err error) {
 	}
 }
 
-// query recording with specific artist name
+// get albums by artist name
 func albumsByArtist(name string) ([]Album, error) {
 	// slice albums
 	var albums []Album
@@ -89,14 +119,70 @@ func albumsByArtist(name string) ([]Album, error) {
 	return albums, nil
 }
 
-func albumsById(id int64) (Album, error) {
+// get albums by id
+func getAlbumById(id int64) (Album, error) {
 	var album Album
 	row := db.QueryRow("SELECT * FROM album WHERE id = $1", id)
 	if err := row.Scan(&album.Id, &album.Title, &album.Artist, &album.Price); err != nil {
 		if err == sql.ErrNoRows {
-			return album, fmt.Errorf("albumsById %d, no such album", id)
+			return album, fmt.Errorf("getAlbumById %d, no such album", id)
 		}
-		return album, fmt.Errorf("albumsById %d, %v", id, err)
+		return album, fmt.Errorf("getAlbumById %d, %v", id, err)
 	}
 	return album, nil
+}
+
+// add new album
+func addAlbum(album Album) (string, error) {
+	_, err := db.Exec("INSERT INTO album (title, artist, price) VALUES ($1, $2, $3)", album.Title, album.Artist, album.Price)
+	if err != nil {
+		return "", fmt.Errorf("addAlbum %v", err)
+	}
+	return "success created new album", nil
+}
+
+// get all albums
+func getAlbums() ([]Album, error) {
+	var albums []Album
+
+	rows, err := db.Query("SELECT * FROM album")
+	if err != nil {
+		return nil, fmt.Errorf("getAlbums: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var album Album
+		if err := rows.Scan(&album.Id, &album.Title, &album.Artist, &album.Price); err != nil {
+			return nil, fmt.Errorf("getAlbums: %v", err)
+		}
+		albums = append(albums, album)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("getAlbums: %v", err)
+	}
+	return albums, nil
+}
+
+// delete albums by id
+func deleteAlbumById(id int64) (string, error) {
+	_, err := db.Exec("DELETE FROM album WHERE id = $1", id)
+	if err != nil {
+		return "", fmt.Errorf("deleteAlbumById: %v", err)
+	}
+	return fmt.Sprintf("success delete album of id: %d", id), nil
+}
+
+// update album by id
+func updateAlbumById(id int64, album Album) (Album, error) {
+
+	_, err := db.Exec("UPDATE album SET title = $1, artist = $2, price = $3 WHERE id = $4",
+		album.Title, album.Artist, album.Price, id,
+	)
+	if err != nil {
+		return album, fmt.Errorf("updateAlbumById: %v", err)
+	}
+
+	return getAlbumById(id)
 }
