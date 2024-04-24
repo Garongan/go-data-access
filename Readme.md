@@ -9,8 +9,8 @@
 - for linux or mac
 
   ```bash
-  $ export DBUSER=postgres
-  $ export DBPASS=postgres
+  export DB_USER=postgres
+  export DB_PASS=postgres
   ```
 
   

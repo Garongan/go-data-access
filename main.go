@@ -27,7 +27,7 @@ var db *sql.DB
 func main() {
 
 	// information to connect psql
-	psqlInfo := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s", host, port, dbName, os.Getenv("user"), os.Getenv("pass"))
+	psqlInfo := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s", host, port, dbName, os.Getenv("DB_USER"), os.Getenv("DB_PASS"))
 
 	// open connection
 	var err error
